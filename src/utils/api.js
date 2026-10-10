@@ -1,0 +1,91 @@
+import axios from 'axios';
+
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+// In production, Vercel proxies /api and /uploads to the separately deployed
+// backend. Keeping requests same-origin allows browsers to retain auth cookies.
+const API_URL = import.meta.env.PROD ? '/api' : (configuredApiUrl || '/api');
+
+const api = axios.create({
+  baseURL: API_URL,
+  timeout: 15000,
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+let csrfTokenFromResponse = '';
+
+const readCsrfToken = () => {
+  if (csrfTokenFromResponse) return csrfTokenFromResponse;
+  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+};
+
+const rememberCsrfToken = (response) => {
+  const token = response?.headers?.['x-csrf-token'];
+  if (token) csrfTokenFromResponse = token;
+};
+
+api.interceptors.request.use((config) => {
+  const token = readCsrfToken();
+  if (token) config.headers['X-CSRF-Token'] = token;
+  return config;
+});
+
+let isRefreshing = false;
+let failedQueue = [];
+const refreshExemptPaths = new Set([
+  '/auth/login', '/auth/admin-login', '/auth/register', '/auth/google', '/auth/apple',
+  '/auth/forgot-password', '/auth/reset-password', '/auth/verify-otp', '/auth/resend-otp',
+]);
+
+const processQueue = (error) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve();
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  (response) => {
+    rememberCsrfToken(response);
+    return response;
+  },
+  async (error) => {
+    rememberCsrfToken(error.response);
+    const originalRequest = error.config;
+    const requestPath = originalRequest?.url?.split('?')[0];
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && requestPath !== '/auth/refresh-token' && !refreshExemptPaths.has(requestPath)) {
+      if (isRefreshing) {
+        originalRequest._retry = true;
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => api(originalRequest));
+      }
+      originalRequest._retry = true;
+      isRefreshing = true;
+      try {
+        await api.post('/auth/refresh-token', {}, { withCredentials: true });
+        processQueue(null);
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
+export default api;
