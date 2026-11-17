@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FiInstagram, FiTwitter, FiLinkedin, FiYoutube, FiHeart } from 'react-icons/fi';
 import { footerLinks } from '@/data/navigation';
 import { useSiteSettings } from '@/hooks/useSiteContent';
+import { openCookieSettings } from '@/utils/consent';
 
 export default function Footer() {
   const settings = useSiteSettings();
@@ -118,6 +119,13 @@ export default function Footer() {
                 {policy}
               </Link>
             ))}
+            <button
+              type="button"
+              onClick={openCookieSettings}
+              className="hover:text-caviar-300 transition-colors"
+            >
+              Cookie Settings
+            </button>
           </div>
           <p className="text-xs text-caviar-600 flex items-center">
             Made with <FiHeart className="w-3 h-3 mx-1 text-red-400" /> by {settings.brandName}

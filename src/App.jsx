@@ -12,6 +12,7 @@ import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/cart/CartDrawer';
 import CursorEffect from '@/components/ui/CursorEffect';
 import BackToTop from '@/components/ui/BackToTop';
+import CookieConsent from '@/components/ui/CookieConsent';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import PageTransition from '@/components/layout/PageTransition';
 
@@ -147,6 +148,7 @@ export default function App() {
       </main>
       <Footer />
       <CartDrawer />
+      <CookieConsent />
       <BackToTop />
     </>
   );

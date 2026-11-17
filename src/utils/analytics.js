@@ -1,5 +1,8 @@
-// GA4 helper — every function is a safe no-op when VITE_GA_MEASUREMENT_ID is unset,
-// so the site works fine without analytics configured.
+// GA4 helper — every function is a safe no-op when VITE_GA_MEASUREMENT_ID is unset
+// or the visitor has not accepted analytics cookies, so the site works fine
+// without analytics configured.
+
+import { hasConsent } from './consent';
 
 const MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || '';
 let initialized = false;
@@ -11,6 +14,7 @@ export function isAnalyticsEnabled() {
 // Load gtag.js once and initialize. Call from main.jsx on app start.
 export function initAnalytics() {
   if (!MEASUREMENT_ID || initialized || typeof window === 'undefined') return;
+  if (!hasConsent('analytics')) return;
   initialized = true;
 
   window.dataLayer = window.dataLayer || [];
@@ -27,13 +31,13 @@ export function initAnalytics() {
 
 // Fire any GA4 event, e.g. trackEvent('add_to_cart', { currency, value, items })
 export function trackEvent(name, params = {}) {
-  if (!MEASUREMENT_ID) return;
+  if (!MEASUREMENT_ID || !hasConsent('analytics')) return;
   window.gtag?.('event', name, params);
 }
 
 // Track an SPA route change as a page_view (initial view is handled manually too).
 export function trackPageView(path) {
-  if (!MEASUREMENT_ID) return;
+  if (!MEASUREMENT_ID || !hasConsent('analytics')) return;
   window.gtag?.('event', 'page_view', {
     page_path: path,
     page_location: typeof window !== 'undefined' ? window.location.href : undefined,
