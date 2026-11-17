@@ -79,6 +79,13 @@ export default function CookieConsent() {
   const rejectOptional = () => commit({ functional: false, analytics: false, marketing: false });
   const toggle = (key) => setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  // Closing without saving keeps a previously saved choice, but a first-time
+  // visitor should get the banner back so the decision is not silently skipped.
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    if (!readConsent()) setVisible(true);
+  };
+
   return (
     <>
       {visible && !settingsOpen && (
@@ -142,7 +149,7 @@ export default function CookieConsent() {
               </div>
               <button
                 type="button"
-                onClick={() => setSettingsOpen(false)}
+                onClick={closeSettings}
                 aria-label="Close cookie settings"
                 className="p-2 text-caviar-400 hover:text-caviar-950 dark:hover:text-white transition-colors"
               >
@@ -181,7 +188,7 @@ export default function CookieConsent() {
             <div className="px-6 py-5 border-t border-caviar-100 dark:border-caviar-800 flex flex-col sm:flex-row gap-3 sm:justify-end">
               <button
                 type="button"
-                onClick={() => setSettingsOpen(false)}
+                onClick={closeSettings}
                 className="px-5 py-3 text-xs tracking-[0.15em] uppercase border border-caviar-300 dark:border-caviar-600 hover:border-caviar-950 dark:hover:border-white transition-colors"
               >
                 Cancel
