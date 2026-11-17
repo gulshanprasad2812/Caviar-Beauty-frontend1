@@ -17,7 +17,7 @@ export default function AdminContent() {
   const { user, logout, isLoading: authLoading } = useAuthStore();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-content-pages'],
     queryFn: () => api.get('/content/admin/pages').then((r) => r.data.pages),
   });
@@ -73,6 +73,15 @@ export default function AdminContent() {
 
           {isLoading ? (
             <div className="text-center py-20 text-caviar-400">Loading pages...</div>
+          ) : isError ? (
+            <div className="text-center py-20 border border-caviar-200 dark:border-caviar-800">
+              <FiFileText className="w-12 h-12 mx-auto text-caviar-300 mb-4" />
+              <p className="text-caviar-500 mb-2">Could not load content pages from the API.</p>
+              <p className="text-xs text-caviar-400 mb-6">
+                The backend deployment is missing <code>/api/content</code>. Redeploy the backend, then try again.
+              </p>
+              <button type="button" onClick={() => refetch()} className="btn-secondary text-xs">Try again</button>
+            </div>
           ) : !data?.length ? (
             <div className="text-center py-20 border border-caviar-200 dark:border-caviar-800">
               <FiFileText className="w-12 h-12 mx-auto text-caviar-300 mb-4" />

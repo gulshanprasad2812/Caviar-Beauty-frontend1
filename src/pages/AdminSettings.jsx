@@ -17,7 +17,7 @@ export default function AdminSettings() {
   const [form, setForm] = useState(siteDefaults);
   const [loaded, setLoaded] = useState(false);
 
-  const { data } = useQuery({
+  const { data, isError, refetch } = useQuery({
     queryKey: ['site-settings-admin'],
     queryFn: () => api.get('/site').then((r) => r.data),
   });
@@ -74,7 +74,23 @@ export default function AdminSettings() {
 
   const handleLogout = async () => { await logout(); toast.success('Logged out'); };
 
-  if (!loaded) return <div className="pt-32 text-center text-caviar-400">Loading settings...</div>;
+  if (!loaded) {
+    return (
+      <div className="pt-32 pb-20 px-4 text-center text-caviar-500 dark:text-caviar-400">
+        {isError ? (
+          <>
+            <p className="mb-4">Site settings could not be loaded from the API.</p>
+            <p className="text-xs text-caviar-400 mb-6">
+              The backend deployment is missing <code>/api/site</code>. Redeploy the backend, then try again.
+            </p>
+            <button type="button" onClick={() => refetch()} className="btn-secondary text-xs">Try again</button>
+          </>
+        ) : (
+          'Loading settings...'
+        )}
+      </div>
+    );
+  }
 
   return (
     <PageTransition>
