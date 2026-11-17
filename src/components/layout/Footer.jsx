@@ -2,13 +2,30 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiInstagram, FiTwitter, FiLinkedin, FiYoutube, FiHeart } from 'react-icons/fi';
 import { footerLinks } from '@/data/navigation';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function Footer() {
+  const settings = useSiteSettings();
+  const [brandFirst, ...brandRest] = settings.brandName.split(' ');
+  const socials = [
+    { url: settings.instagramUrl, Icon: FiInstagram, label: 'Instagram' },
+    { url: settings.twitterUrl, Icon: FiTwitter, label: 'Twitter' },
+    { url: settings.linkedinUrl, Icon: FiLinkedin, label: 'LinkedIn' },
+    { url: settings.youtubeUrl, Icon: FiYoutube, label: 'YouTube' },
+  ];
+
   const container = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const item = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
   return (
     <footer className="bg-caviar-950 text-caviar-300">
+      {settings.announcementEnabled && settings.announcement && (
+        <div className="border-b border-caviar-800 bg-gold-500/10">
+          <p className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-3 text-center text-xs tracking-[0.2em] uppercase text-gold-400">
+            {settings.announcement}
+          </p>
+        </div>
+      )}
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-16 md:py-24">
         <motion.div
           variants={container}
@@ -20,15 +37,22 @@ export default function Footer() {
           {/* Brand */}
           <motion.div variants={item} className="col-span-2 md:col-span-1 lg:col-span-2">
             <Link to="/" className="inline-block">
-              <span className="font-serif text-2xl tracking-[0.2em] text-white">CAVIAR</span>
-              <span className="font-serif text-xl italic text-gold-500 ml-1">Beauty</span>
+              <span className="font-serif text-2xl tracking-[0.2em] text-white uppercase">{brandFirst}</span>
+              {brandRest.length > 0 && (
+                <span className="font-serif text-xl italic text-gold-500 ml-1">{brandRest.join(' ')}</span>
+              )}
             </Link>
-            <p className="mt-4 text-sm leading-relaxed text-caviar-400 max-w-xs">
-              Crafting timeless luxury since 2024. Each piece is a testament to extraordinary craftsmanship and uncompromising quality.
-            </p>
+            <p className="mt-4 text-sm leading-relaxed text-caviar-400 max-w-xs">{settings.footerBlurb}</p>
             <div className="flex items-center space-x-4 mt-6">
-              {[FiInstagram, FiTwitter, FiLinkedin, FiYoutube].map((Icon, i) => (
-                <a key={i} href="#" className="w-10 h-10 flex items-center justify-center border border-caviar-700 text-caviar-400 hover:text-gold-500 hover:border-gold-500 transition-all duration-300 rounded-full">
+              {socials.map(({ url, Icon, label }) => (
+                <a
+                  key={label}
+                  href={url || '#'}
+                  aria-label={label}
+                  target={url ? '_blank' : undefined}
+                  rel={url ? 'noreferrer noopener' : undefined}
+                  className="w-10 h-10 flex items-center justify-center border border-caviar-700 text-caviar-400 hover:text-gold-500 hover:border-gold-500 transition-all duration-300 rounded-full"
+                >
                   <Icon className="w-4 h-4" />
                 </a>
               ))}
@@ -86,7 +110,7 @@ export default function Footer() {
           className="mt-16 pt-8 border-t border-caviar-800 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0"
         >
           <p className="text-xs text-caviar-500">
-            &copy; {new Date().getFullYear()} Caviar Beauty. All rights reserved.
+            &copy; {new Date().getFullYear()} {settings.brandName}. All rights reserved.
           </p>
           <div className="flex items-center space-x-6 text-xs text-caviar-500">
             {footerLinks.policies.map((policy) => (
@@ -96,7 +120,7 @@ export default function Footer() {
             ))}
           </div>
           <p className="text-xs text-caviar-600 flex items-center">
-            Made with <FiHeart className="w-3 h-3 mx-1 text-red-400" /> by Caviar Beauty
+            Made with <FiHeart className="w-3 h-3 mx-1 text-red-400" /> by {settings.brandName}
           </p>
         </motion.div>
       </div>

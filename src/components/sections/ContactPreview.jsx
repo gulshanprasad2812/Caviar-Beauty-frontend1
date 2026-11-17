@@ -2,9 +2,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import { useInView } from '@/hooks/useInView';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function ContactPreview() {
   const { ref, isInView } = useInView();
+  const { supportPhone, supportEmail, address } = useSiteSettings();
 
   return (
     <section ref={ref} className="py-20 md:py-32 px-4 md:px-8 lg:px-12 bg-caviar-50 dark:bg-caviar-900/50">
@@ -22,9 +24,9 @@ export default function ContactPreview() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            { icon: FiPhone, title: 'Phone', info: '+91 98765 43210', link: 'tel:+919876543210' },
-            { icon: FiMail, title: 'Email', info: 'hello@caviarbeauty.com', link: 'mailto:hello@caviarbeauty.com' },
-            { icon: FiMapPin, title: 'Flagship Store', info: 'DLF Emporio, New Delhi', link: '/contact' },
+            { icon: FiPhone, title: 'Phone', info: supportPhone, link: `tel:${(supportPhone || '').replace(/[^\d+]/g, '')}` },
+            { icon: FiMail, title: 'Email', info: supportEmail, link: `mailto:${supportEmail}` },
+            { icon: FiMapPin, title: 'Flagship Store', info: address, link: '/contact' },
           ].map((item, i) => (
             <motion.div
               key={item.title}

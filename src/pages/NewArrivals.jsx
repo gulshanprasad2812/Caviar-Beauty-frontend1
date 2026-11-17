@@ -3,8 +3,12 @@ import { motion } from 'framer-motion';
 import api from '@/utils/api';
 import PageTransition from '@/components/layout/PageTransition';
 import ProductGrid from '@/components/product/ProductGrid';
+import { useSeo } from '@/hooks/useSeo';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function NewArrivals() {
+  const { brandName } = useSiteSettings();
+  useSeo('New Arrivals', `Shop the latest arrivals at ${brandName}.`);
   const { data, isLoading } = useQuery({
     queryKey: ['new-arrivals-page'],
     queryFn: () => api.get('/products/new-arrivals').then(r => r.data),

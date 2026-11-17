@@ -8,6 +8,7 @@ import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import GoogleLoginButton from './GoogleLoginButton';
 import toast from 'react-hot-toast';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 const schema = z.object({
   email: z.string().email('Invalid email address'),
@@ -15,6 +16,7 @@ const schema = z.object({
 });
 
 export default function LoginForm() {
+  const { brandName } = useSiteSettings();
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuthStore();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
@@ -31,7 +33,7 @@ export default function LoginForm() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
       <h1 className="font-serif text-3xl md:text-4xl mb-2">Welcome Back</h1>
-      <p className="text-caviar-500 dark:text-caviar-400 mb-8">Sign in to your Caviar Beauty account</p>
+      <p className="text-caviar-500 dark:text-caviar-400 mb-8">Sign in to your {brandName} account</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>

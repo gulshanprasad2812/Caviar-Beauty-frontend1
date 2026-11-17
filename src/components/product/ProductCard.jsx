@@ -5,8 +5,10 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice, calculateDiscount, getImageUrl } from '@/utils/helpers';
 import { trackEvent, toGaItems } from '@/utils/analytics';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function ProductCard({ product, listName = 'products', index = -1 }) {
+  const { brandName } = useSiteSettings();
   const isInWishlist = useWishlistStore((s) => s.items.includes(product.id));
   const toggleItem = useWishlistStore((s) => s.toggleItem);
   const addItem = useCartStore((s) => s.addItem);
@@ -52,7 +54,7 @@ export default function ProductCard({ product, listName = 'products', index = -1
         </div>
 
         <div className="space-y-1">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-caviar-400 dark:text-caviar-500">{product.brand?.name || 'Caviar Beauty'}</p>
+          <p className="text-[10px] tracking-[0.2em] uppercase text-caviar-400 dark:text-caviar-500">{product.brand?.name || brandName}</p>
           <h3 className="text-sm font-medium truncate group-hover:text-gold-500 transition-colors">{product.name}</h3>
           <div className="flex items-center space-x-2">
             {product.discountPrice ? (

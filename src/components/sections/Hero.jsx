@@ -2,20 +2,31 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronDown } from 'react-icons/fi';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
-const slides = [
-  { id: 1, title: 'Timeless Elegance', subtitle: 'Discover the new collection', cta: 'Shop Now', cta2: 'Explore Collection', gradient: 'from-caviar-950 via-caviar-900 to-caviar-800' },
-  { id: 2, title: 'Luxury Redefined', subtitle: 'Handcrafted perfection', cta: 'Discover', cta2: 'View Lookbook', gradient: 'from-caviar-900 via-caviar-800 to-caviar-950' },
-  { id: 3, title: 'The Art of Style', subtitle: 'Where craftsmanship meets design', cta: 'Explore', cta2: 'Our Story', gradient: 'from-caviar-950 via-caviar-850 to-caviar-800' },
+const gradients = [
+  'from-caviar-950 via-caviar-900 to-caviar-800',
+  'from-caviar-900 via-caviar-800 to-caviar-950',
+  'from-caviar-950 via-caviar-850 to-caviar-800',
 ];
 
 export default function Hero() {
+  const settings = useSiteSettings();
+  const slides = settings.heroSlides.map((slide, index) => ({
+    ...slide,
+    gradient: gradients[index % gradients.length],
+  }));
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
+    setCurrent((value) => (value < slides.length ? value : 0));
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length < 2) return undefined;
     const timer = setInterval(() => setCurrent((c) => (c + 1) % slides.length), 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   return (
     <section className="relative h-screen min-h-[600px] max-h-[900px] overflow-hidden">
@@ -69,12 +80,14 @@ export default function Hero() {
               transition={{ delay: 0.5, duration: 0.6 }}
               className="flex items-center justify-center space-x-4"
             >
-              <Link to="/products" className="btn-primary bg-white text-caviar-950 hover:bg-gold-500 hover:text-white border-0 text-xs">
-                {slides[current].cta}
+              <Link to={slides[current]?.ctaHref || '/products'} className="btn-primary bg-white text-caviar-950 hover:bg-gold-500 hover:text-white border-0 text-xs">
+                {slides[current]?.cta}
               </Link>
-              <Link to="/collections" className="btn-secondary border-white text-white hover:bg-white hover:text-caviar-950 text-xs">
-                {slides[current].cta2}
-              </Link>
+              {slides[current]?.cta2 && (
+                <Link to={slides[current]?.cta2Href || '/collections'} className="btn-secondary border-white text-white hover:bg-white hover:text-caviar-950 text-xs">
+                  {slides[current]?.cta2}
+                </Link>
+              )}
             </motion.div>
           </motion.div>
         </AnimatePresence>

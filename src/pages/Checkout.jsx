@@ -12,6 +12,7 @@ import { trackEcommerceEvent } from '@/utils/analytics';
 import api from '@/utils/api';
 import PageTransition from '@/components/layout/PageTransition';
 import toast from 'react-hot-toast';
+import { useSeo } from '@/hooks/useSeo';
 
 const schema = z.object({
   firstName: z.string().min(1, 'Required'),
@@ -26,20 +27,55 @@ const schema = z.object({
 });
 
 const steps = ['Shipping', 'Payment', 'Review'];
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 
-function loadRazorpayScript() {
-  return new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve(window.Razorpay);
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(window.Razorpay);
-    script.onerror = () => reject(new Error('Failed to load Razorpay'));
-    document.body.appendChild(script);
+// The Paytm MID is served by POST /api/payments/create-order (and by
+// GET /api/payments/config) together with the one-time txnToken. The merchant
+// key never reaches the browser. VITE_PAYTM_MID is optional and only a fallback.
+const FALLBACK_MID = import.meta.env.VITE_PAYTM_MID || '';
+const FALLBACK_SCRIPT_HOST = import.meta.env.VITE_PAYTM_HOST || 'https://securestage.paytmpayments.com';
+
+const paytmScripts = new Map();
+
+/** Loads {HOST}/merchantpgpui/checkoutjs/merchants/{MID}.js once per MID. */
+function loadPaytmScript(mid, scriptUrl) {
+  if (window.Paytm?.CheckoutJS) return Promise.resolve(window.Paytm);
+  const url =
+    scriptUrl || `${FALLBACK_SCRIPT_HOST}/merchantpgpui/checkoutjs/merchants/${encodeURIComponent(mid)}.js`;
+  if (paytmScripts.has(url)) return paytmScripts.get(url);
+
+  const promise = new Promise((resolve, reject) => {
+    const selector = `script[data-paytm-checkout="${url}"]`;
+    let script = document.querySelector(selector);
+
+    const ready = () => {
+      if (!window.Paytm?.CheckoutJS) return reject(new Error('Paytm Checkout did not initialise'));
+      if (typeof window.Paytm.CheckoutJS.onLoad === 'function') {
+        window.Paytm.CheckoutJS.onLoad(() => resolve(window.Paytm));
+      } else {
+        resolve(window.Paytm);
+      }
+    };
+
+    if (!script) {
+      script = document.createElement('script');
+      script.src = url;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      script.dataset.paytmCheckout = url;
+      script.addEventListener('load', ready, { once: true });
+      script.addEventListener('error', () => reject(new Error('Failed to load Paytm Checkout')), { once: true });
+      document.head.appendChild(script);
+    } else {
+      ready();
+    }
   });
+
+  paytmScripts.set(url, promise);
+  return promise;
 }
 
 export default function Checkout() {
+  useSeo('Checkout', 'Secure checkout with delivery details and payment.');
   const [step, setStep] = useState(0);
   const [placing, setPlacing] = useState(false);
   const [couponCode, setCouponCode] = useState('');
@@ -47,7 +83,6 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState('');
   const items = useCartStore((s) => s.items);
   const total = useCartStore((s) => s.total);
-  const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: savedAddresses = [] } = useQuery({
     queryKey: ['my-addresses'],
@@ -55,9 +90,16 @@ export default function Checkout() {
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
+  const { data: paymentConfig } = useQuery({
+    queryKey: ['payment-config'],
+    queryFn: () => api.get('/payments/config').then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+  const paymentReady = paymentConfig?.configured !== false;
   const navigate = useNavigate();
   const idempotencyKey = useRef(crypto.randomUUID());
-  const { register, handleSubmit, formState: { errors }, setValue, getValues } = useForm({
+  const paymentSettled = useRef(false);
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { country: 'India' },
   });
@@ -110,7 +152,7 @@ export default function Checkout() {
 
     const { data: order } = await api.post('/orders', {
       shippingAddressId: address.id,
-      paymentMethod: 'Razorpay',
+      paymentMethod: 'Paytm',
       couponCode: coupon?.code || undefined,
       idempotencyKey: idempotencyKey.current,
     });
@@ -118,57 +160,96 @@ export default function Checkout() {
     return order;
   };
 
-  const payWithRazorpay = async (orderId) => {
-    const { data: rzp } = await api.post('/payments/create-order', { orderId });
+  const payWithPaytm = async (orderId) => {
+    const { data: gateway } = await api.post('/payments/create-order', { orderId });
+    const mid = gateway.mid || FALLBACK_MID;
+    if (!mid || !gateway.txnToken) {
+      throw new Error('Payment gateway is not configured (missing Paytm MID or transaction token)');
+    }
 
-    const Razorpay = await loadRazorpayScript();
-    const options = {
-      key: rzp.keyId,
-      amount: Math.round(rzp.amount * 100),
-      currency: rzp.currency || 'INR',
-      name: 'Caviar Beauty',
-      description: `Order ${rzp.razorpayOrderId}`,
-      order_id: rzp.razorpayOrderId,
-      prefill: {
-        name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : `${getValues('firstName')} ${getValues('lastName')}`,
-        email: user?.email || getValues('email'),
-        contact: getValues('phone'),
+    const Paytm = await loadPaytmScript(mid, gateway.checkoutScriptUrl);
+
+    /** Server-side verification: the browser response alone is never trusted. */
+    const confirmPayment = async () => {
+      if (paymentSettled.current) return 'paid';
+      const { data } = await api.post('/payments/verify', { orderId });
+      if (data?.pending) return 'pending';
+
+      paymentSettled.current = true;
+      useCartStore.getState().reset();
+      trackEcommerceEvent('purchase', {
+        items,
+        value: grandTotal,
+        transaction_id: orderId,
+        shipping: shippingCost,
+        tax,
+        ...(coupon?.code ? { coupon: coupon.code } : {}),
+      });
+      toast.success('Payment successful! Order confirmed.');
+      navigate('/orders/' + orderId);
+      return 'paid';
+    };
+
+    const config = {
+      root: '',
+      flow: 'DEFAULT',
+      website: gateway.websiteName,
+      merchant: {
+        mid,
+        redirect: false,
       },
-      theme: { color: '#28221c' },
-      handler: async (response) => {
-        try {
-          await api.post('/payments/verify', {
-            orderId,
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-          });
-          useCartStore.getState().reset();
-          trackEcommerceEvent('purchase', {
-            items,
-            value: grandTotal,
-            transaction_id: orderId,
-            shipping: shippingCost,
-            tax,
-            ...(coupon?.code ? { coupon: coupon.code } : {}),
-          });
-          toast.success('Payment successful! Order confirmed.');
-          navigate('/orders/' + orderId);
-        } catch (err) {
-          toast.error(err.response?.data?.error || 'Payment verification failed');
-        }
+      data: {
+        orderId: gateway.paytmOrderId,
+        token: gateway.txnToken,
+        tokenType: 'TXN_TOKEN',
+        amount: Number(gateway.amount).toFixed(2),
       },
-      modal: {
-        ondismiss: async () => {
-          try { await api.post(`/orders/${orderId}/cancel`); } catch {}
+      handler: {
+        transactionStatus: async () => {
+          try {
+            const state = await confirmPayment();
+            if (state === 'pending') {
+              toast('Paytm is still confirming this payment. It will appear on your orders page shortly.', {
+                icon: '⏳',
+              });
+              navigate('/orders/' + orderId);
+            }
+          } catch (err) {
+            toast.error(err.response?.data?.error || 'Payment verification failed');
+            setPlacing(false);
+          }
+        },
+        notifyMerchant: async (eventName) => {
+          if (!['APP_CLOSED', 'SESSION_EXPIRED', 'PAYMENT_FAILED'].includes(eventName)) return;
+          try {
+            const state = await confirmPayment();
+            if (state === 'paid' || state === 'pending') {
+              if (state === 'pending') navigate('/orders/' + orderId);
+              return;
+            }
+          } catch {
+            // Verification failed: the backend has already cancelled the order.
+          }
           setPlacing(false);
-          toast.error('Payment cancelled. Your order was not placed.');
+          toast.error('Payment was not completed. Your order has not been charged.');
         },
       },
     };
 
-    const rzpInstance = new Razorpay(options);
-    rzpInstance.open();
+    await new Promise((resolve, reject) => {
+      try {
+        Paytm.CheckoutJS.onLoad(() => {
+          Paytm.CheckoutJS.init(config)
+            .then(() => {
+              Paytm.CheckoutJS.invoke();
+              resolve();
+            })
+            .catch(reject);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
   };
 
   const onSubmit = async (data) => {
@@ -190,12 +271,18 @@ export default function Checkout() {
       value: grandTotal,
       ...(coupon?.code ? { coupon: coupon.code } : {}),
     });
+    if (!paymentReady) {
+      toast.error('Online payment is not configured yet, so this order cannot be paid. Please contact the store.');
+      setStep(1);
+      return;
+    }
     setPlacing(true);
     try {
       const order = await placeOrder(data);
-      await payWithRazorpay(order.id);
+      await payWithPaytm(order.id);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to place order. Please try again.');
+      const message = err.response?.data?.error || err.message || 'Failed to place order. Please try again.';
+      toast.error(message);
       setPlacing(false);
     }
   };
@@ -263,15 +350,35 @@ export default function Checkout() {
               {step === 1 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                   <h3 className="text-sm tracking-widest uppercase font-medium">Payment Method</h3>
-                  <div className="p-6 border border-caviar-200 dark:border-caviar-800">
+                  <div className={`p-6 border ${paymentReady ? 'border-caviar-200 dark:border-caviar-800' : 'border-amber-400'}`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-sm">Razorpay Secure Checkout</p>
+                        <p className="font-medium text-sm">Paytm Secure Checkout</p>
                         <p className="text-xs text-caviar-500 mt-1">Pay via UPI, Credit/Debit Card, Net Banking, or Wallets</p>
                       </div>
-                      <span className="text-xs bg-caviar-100 dark:bg-caviar-800 text-caviar-700 dark:text-caviar-200 px-2 py-1">Secure</span>
+                      {paymentReady ? (
+                        <span className="text-xs bg-caviar-100 dark:bg-caviar-800 text-caviar-700 dark:text-caviar-200 px-2 py-1">Secure</span>
+                      ) : (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1">Not configured</span>
+                      )}
                     </div>
+                    {paymentReady && paymentConfig?.mode && (
+                      <p className="text-[11px] text-caviar-400 mt-3">
+                        Gateway mode: {paymentConfig.mode === 'live' ? 'Live (real money)' : 'Test (sandbox)'} ·{' '}
+                        {paymentConfig.webhookConfigured ? 'Webhooks active' : 'Webhook verification unavailable'}
+                      </p>
+                    )}
                   </div>
+                  {!paymentReady && (
+                    <div className="p-5 border border-amber-400 bg-amber-50 text-amber-900">
+                      <p className="text-sm font-medium">Online payment is not available on this deployment.</p>
+                      <p className="text-xs mt-2 leading-relaxed">
+                        The server has no Paytm credentials yet, so the Pay button would fail with HTTP 503.
+                        {paymentConfig?.missing?.length ? ` Set: ${paymentConfig.missing.join(', ')}.` : ''}
+                        {' '}See PAYMENT_SETUP.md in the repository root.
+                      </p>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -294,8 +401,8 @@ export default function Checkout() {
                 {step > 0 ? (
                   <button type="button" onClick={() => setStep(step - 1)} className="text-sm text-caviar-500 hover:text-caviar-950 dark:hover:text-white transition-colors">← Back</button>
                 ) : <div />}
-                <button type="submit" className="btn-primary text-xs" disabled={placing}>
-                  {placing ? 'Processing...' : step === 2 ? 'Pay Securely' : 'Continue'}
+                <button type="submit" className="btn-primary text-xs" disabled={placing || (step === 2 && !paymentReady)}>
+                  {placing ? 'Processing...' : step === 2 ? (paymentReady ? 'Pay Securely' : 'Payment unavailable') : 'Continue'}
                 </button>
               </div>
             </form>

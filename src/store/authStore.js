@@ -16,6 +16,22 @@ export const useAuthStore = create((set, get) => ({
   register: async (userData) => {
     const { data } = await api.post('/auth/register', userData);
     set({ user: data.user, isAuthenticated: true });
+    return data;
+  },
+  verifyEmailOtp: async (otp) => {
+    const { data } = await api.post('/auth/verify-otp', { email: get().user?.email, otp });
+    set({ user: { ...get().user, isVerified: true } });
+    return data;
+  },
+  sendPhoneOtp: async (phone) => {
+    const { data } = await api.post('/auth/phone/send-otp', { phone });
+    if (phone) set({ user: { ...get().user, phone } });
+    return data;
+  },
+  verifyPhoneOtp: async (otp) => {
+    const { data } = await api.post('/auth/phone/verify-otp', { otp });
+    set({ user: { ...get().user, phoneVerified: true } });
+    return data;
   },
   googleLogin: async (credential) => {
     const { data } = await api.post('/auth/google', credential);

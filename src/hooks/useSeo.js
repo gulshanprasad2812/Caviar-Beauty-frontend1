@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 const SITE_URL = import.meta.env.VITE_FRONTEND_URL || 'https://caviarbeauty.com';
 
@@ -34,9 +35,14 @@ const upsertJsonLd = (id, data) => {
 };
 
 export const useSeo = (title, description, options = {}) => {
+  const { brandName } = useSiteSettings();
+
   useEffect(() => {
     const { image, path, jsonLd } = options;
-    const fullTitle = title ? `${title} | Caviar Beauty` : 'Caviar Beauty | Luxury Fashion';
+    const suffix = ` | ${brandName}`;
+    const fullTitle = title
+      ? (title.toLowerCase().endsWith(suffix.toLowerCase()) ? title : `${title}${suffix}`)
+      : `${brandName} | Luxury Fashion`;
     document.title = fullTitle;
 
     if (description) {
@@ -46,7 +52,7 @@ export const useSeo = (title, description, options = {}) => {
     }
 
     setMeta('property', 'og:title', fullTitle);
-    setMeta('property', 'og:site_name', 'Caviar Beauty');
+    setMeta('property', 'og:site_name', brandName);
     setMeta('property', 'og:type', options.type || 'website');
     setMeta('property', 'og:image', image || '/favicon.svg');
     setMeta('property', 'og:url', `${SITE_URL}${path || '/'}`);
@@ -55,7 +61,7 @@ export const useSeo = (title, description, options = {}) => {
 
     if (path) upsertLink('canonical', `${SITE_URL}${path}`);
     if (jsonLd) upsertJsonLd(`jsonld-${path?.replace(/[^a-z0-9]/gi, '') || 'home'}`, jsonLd);
-  }, [title, description, options.image, options.path, options.type, options.jsonLd]);
+  }, [title, description, options.image, options.path, options.type, options.jsonLd, brandName]);
 };
 
 export default useSeo;

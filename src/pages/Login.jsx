@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import LoginForm from '@/components/auth/LoginForm';
 import PageTransition from '@/components/layout/PageTransition';
 import { useAuthStore } from '@/store/authStore';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function Login() {
+  useSeo('Sign In', 'Sign in to your account to track orders and save your wishlist.');
   const { user, isAuthenticated } = useAuthStore();
 
   if (isAuthenticated && user?.role === 'ADMIN') return <Navigate to="/admin" replace />;

@@ -241,7 +241,7 @@ export default function AdminOrders() {
                               {order.refunds?.length > 0 && (
                                 <p className="text-xs text-caviar-500 mb-2">
                                   Refund: {order.refunds[order.refunds.length - 1].status} · {formatPrice(order.refunds[order.refunds.length - 1].amount)}
-                                  {order.refunds[order.refunds.length - 1].razorpayRefundId && <span className="block truncate">{order.refunds[order.refunds.length - 1].razorpayRefundId}</span>}
+                                  {order.refunds[order.refunds.length - 1].paytmRefundId && <span className="block truncate">{order.refunds[order.refunds.length - 1].paytmRefundId}</span>}
                                 </p>
                               )}
                               {['CANCELLED', 'RETURNED'].includes(order.status) && order.paymentStatus === 'COMPLETED' && (

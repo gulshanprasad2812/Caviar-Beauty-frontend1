@@ -2,10 +2,12 @@ import { Navigate } from 'react-router-dom';
 import RegisterForm from '@/components/auth/RegisterForm';
 import PageTransition from '@/components/layout/PageTransition';
 import { useAuthStore } from '@/store/authStore';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function Register() {
-  const { isAuthenticated } = useAuthStore();
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  useSeo('Create Account', 'Create an account for faster checkout, order tracking and saved favourites.');
+  const { isAuthenticated, user } = useAuthStore();
+  if (isAuthenticated) return <Navigate to={user?.isVerified ? '/dashboard' : '/verify-email'} replace />;
 
   return (
     <PageTransition>

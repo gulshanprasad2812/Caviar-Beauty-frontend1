@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageTransition from '@/components/layout/PageTransition';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function NotFound() {
+  useSeo('Page Not Found', 'The page you were looking for could not be found.');
   return (
     <PageTransition>
       <div className="pt-24 md:pt-32 pb-20 px-4 md:px-8 lg:px-12 min-h-screen flex items-center justify-center">

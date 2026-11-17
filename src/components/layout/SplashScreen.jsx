@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function SplashScreen({ onFinish }) {
+  const { brandName } = useSiteSettings();
+  const [brandFirst, ...brandRest] = brandName.split(' ');
+
   useEffect(() => {
     const timer = setTimeout(onFinish, 2500);
     return () => clearTimeout(timer);
@@ -22,19 +26,19 @@ export default function SplashScreen({ onFinish }) {
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
         >
           <motion.h1
-            className="font-serif text-4xl md:text-6xl lg:text-7xl tracking-[0.15em] text-caviar-950 dark:text-white"
-            animate={{ opacity: [1, 1, 0], y: [0, 0, -20] }}
-            transition={{ duration: 2.2, times: [0, 0.6, 1] }}
-          >
-            CAVIAR
-          </motion.h1>
-          <motion.p
-            className="font-serif text-xl md:text-2xl text-gold-500 italic mt-2 tracking-[0.3em]"
-            animate={{ opacity: [1, 1, 0] }}
-            transition={{ duration: 2.2, times: [0, 0.6, 1], delay: 0.1 }}
-          >
-            Beauty
-          </motion.p>
+              className="font-serif text-4xl md:text-6xl lg:text-7xl tracking-[0.15em] text-caviar-950 dark:text-white"
+              animate={{ opacity: [1, 1, 0], y: [0, 0, -20] }}
+              transition={{ duration: 2.2, times: [0, 0.6, 1] }}
+            >
+              {brandFirst}
+            </motion.h1>
+            <motion.p
+              className="font-serif text-xl md:text-2xl text-gold-500 italic mt-2 tracking-[0.3em]"
+              animate={{ opacity: [1, 1, 0] }}
+              transition={{ duration: 2.2, times: [0, 0.6, 1], delay: 0.1 }}
+            >
+              {brandRest.join(' ')}
+            </motion.p>
           <motion.div
             className="h-[1px] bg-gradient-to-r from-transparent via-gold-500 to-transparent mt-6 mx-auto"
             initial={{ width: 0 }}

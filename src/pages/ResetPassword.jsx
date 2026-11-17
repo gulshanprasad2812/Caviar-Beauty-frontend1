@@ -5,8 +5,10 @@ import { FiLock, FiCheck } from 'react-icons/fi';
 import api from '@/utils/api';
 import toast from 'react-hot-toast';
 import PageTransition from '@/components/layout/PageTransition';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function ResetPassword() {
+  useSeo('Reset Password', 'Choose a new password for your account.');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');

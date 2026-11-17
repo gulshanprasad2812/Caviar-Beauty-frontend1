@@ -8,8 +8,11 @@ import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { menuItems } from '@/data/navigation';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function Navbar() {
+  const settings = useSiteSettings();
+  const [brandFirst, ...brandRest] = settings.brandName.split(' ');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { scrollDirection, isScrolled } = useScrollDirection();
@@ -62,13 +65,15 @@ export default function Navbar() {
               <span className={`font-serif text-xl md:text-2xl tracking-[0.2em] transition-colors duration-300 ${
                 useLightText ? 'text-white' : 'text-caviar-950 dark:text-white'
               }`}>
-                CAVIAR
+                {brandFirst}
               </span>
-              <span className={`font-serif text-lg md:text-xl italic text-gold-500 transition-opacity duration-300 ${
-                useLightText ? 'text-gold-400' : 'text-gold-600 dark:text-gold-400'
-              }`}>
-                Beauty
-              </span>
+              {brandRest.length > 0 && (
+                <span className={`font-serif text-lg md:text-xl italic text-gold-500 transition-opacity duration-300 ${
+                  useLightText ? 'text-gold-400' : 'text-gold-600 dark:text-gold-400'
+                }`}>
+                  {brandRest.join(' ')}
+                </span>
+              )}
             </Link>
 
             {/* Desktop Menu */}

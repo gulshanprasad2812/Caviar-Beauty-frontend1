@@ -4,14 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import api from '@/utils/api';
 import { useSeo } from '@/hooks/useSeo';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 import { trackEvent, toGaItems } from '@/utils/analytics';
 import PageTransition from '@/components/layout/PageTransition';
 import ProductGrid from '@/components/product/ProductGrid';
 import ProductFilters from '@/components/product/ProductFilters';
 
 export default function Products() {
+  const { brandName } = useSiteSettings();
   const [searchParams, setSearchParams] = useSearchParams();
-  useSeo('All Products', 'Explore the luxury collection at Caviar Beauty.');
+  useSeo('All Products', `Explore the luxury collection at ${brandName}.`);
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     brand: searchParams.get('brand') || '',

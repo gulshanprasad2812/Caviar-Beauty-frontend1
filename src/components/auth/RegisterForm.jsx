@@ -4,15 +4,17 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiUser, FiCheck, FiX, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiCheck, FiX, FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import GoogleLoginButton from './GoogleLoginButton';
 import toast from 'react-hot-toast';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 const schema = z.object({
   firstName: z.string().min(1, 'Required'),
   lastName: z.string().min(1, 'Required'),
   email: z.string().email('Invalid email'),
+  phone: z.string().optional().refine((v) => !v || v.replace(/\D/g, '').length >= 10, 'Enter at least 10 digits'),
   password: z.string()
     .min(8, 'Minimum 8 characters')
     .regex(/[A-Z]/, 'Must include an uppercase letter')
@@ -31,6 +33,7 @@ const requirements = [
 ];
 
 export default function RegisterForm() {
+  const { brandName } = useSiteSettings();
   const { register: registerUser } = useAuthStore();
   const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -40,15 +43,20 @@ export default function RegisterForm() {
 
   const onSubmit = async (data) => {
     try {
-      await registerUser({ email: data.email, password: data.password, firstName: data.firstName, lastName: data.lastName });
-      toast.success('Account created! Welcome to Caviar Beauty.');
+      const result = await registerUser({ email: data.email, password: data.password, firstName: data.firstName, lastName: data.lastName, ...(data.phone ? { phone: data.phone } : {}) });
+      const verification = result?.verification;
+      if (verification && verification.emailSent === false) {
+        toast.error('Account created, but the verification email could not be sent yet. See the server log / EMAIL_OTP_SETUP.md.');
+      } else {
+        toast.success('Account created! Check your email for the 6-digit verification code.');
+      }
     } catch (err) { toast.error(err.response?.data?.error || err.response?.data?.message || 'Registration failed'); }
   };
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
       <h1 className="font-serif text-3xl md:text-4xl mb-2">Create Account</h1>
-      <p className="text-caviar-500 dark:text-caviar-400 mb-8">Join the Caviar Beauty family</p>
+      <p className="text-caviar-500 dark:text-caviar-400 mb-8">Join the {brandName} family</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
@@ -71,6 +79,15 @@ export default function RegisterForm() {
             <input type="email" {...register('email')} className="input-field pl-12" placeholder="your@email.com" />
           </div>
           {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs tracking-widest uppercase font-medium mb-2">Phone <span className="text-caviar-400 normal-case tracking-normal">(optional — for SMS codes)</span></label>
+          <div className="relative">
+            <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-caviar-400 w-4 h-4" />
+            <input type="tel" {...register('phone')} className="input-field pl-12" placeholder="+91 98765 43210" />
+          </div>
+          {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
         </div>
 
         <div>

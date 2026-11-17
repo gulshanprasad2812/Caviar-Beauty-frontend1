@@ -5,8 +5,10 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice, calculateDiscount } from '@/utils/helpers';
 import toast from 'react-hot-toast';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function ProductInfo({ product }) {
+  const { brandName } = useSiteSettings();
   const [selectedVariant, setSelectedVariant] = useState(product.variants?.[0] || null);
   const [quantity, setQuantity] = useState(1);
   const isInWishlist = useWishlistStore((s) => s.items.includes(product.id));
@@ -46,7 +48,7 @@ export default function ProductInfo({ product }) {
     <div className="space-y-8">
       <div>
         <p className="text-xs tracking-[0.2em] uppercase text-caviar-400 dark:text-caviar-500 mb-2">
-          {product.brand?.name || 'Caviar Beauty'}
+          {product.brand?.name || brandName}
         </p>
         <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-medium">{product.name}</h1>
 

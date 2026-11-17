@@ -12,8 +12,8 @@ export const infoPages = {
           'Placing an order takes less than two minutes. Add items to your bag, enter a delivery address, choose a payment method, and confirm.',
         ],
         items: [
-          'What payment methods do you accept? — We accept all major credit and debit cards, UPI, net banking, and digital wallets via our secure Razorpay gateway.',
-          'Is checkout secure? — Yes. All payments are processed over an encrypted connection through Razorpay, a PCI-DSS compliant payment provider. We never store your card details.',
+          'What payment methods do you accept? — We accept all major credit and debit cards, UPI, net banking, and digital wallets via our secure Paytm gateway.',
+          'Is checkout secure? — Yes. All payments are processed over an encrypted connection through Paytm, a PCI-DSS compliant payment provider. We never store your card details.',
           'Do you provide an invoice? — Yes. A GST-compliant invoice is available for every order. You can download it from the order detail page.',
           'Can I cancel my order? — Orders can be cancelled while they are still pending or confirmed. Once an order is shipped, it cannot be cancelled.',
         ],

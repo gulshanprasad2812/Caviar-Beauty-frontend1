@@ -4,8 +4,10 @@ import { motion } from 'framer-motion';
 import api from '@/utils/api';
 import PageTransition from '@/components/layout/PageTransition';
 import ProductGrid from '@/components/product/ProductGrid';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function Wishlist() {
+  useSeo('Wishlist', 'Pieces you have saved for later.');
   const { data, isLoading } = useQuery({
     queryKey: ['wishlist'],
     queryFn: () => api.get('/wishlist').then(r => r.data),

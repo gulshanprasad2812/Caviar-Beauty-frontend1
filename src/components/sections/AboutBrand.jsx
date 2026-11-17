@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function AboutBrand() {
   const { ref, isInView } = useInView();
+  const { brandName } = useSiteSettings();
 
   return (
     <section ref={ref} className="py-20 md:py-32 px-4 md:px-8 lg:px-12">
@@ -31,9 +33,9 @@ export default function AboutBrand() {
             <h2 className="section-title mt-3">The Art of Luxury</h2>
             <div className="w-16 h-[1px] bg-gold-500 mt-6 mb-8" />
             <div className="space-y-5 text-caviar-600 dark:text-caviar-300 leading-relaxed">
-              <p>Founded in 2024, Caviar Beauty represents the pinnacle of luxury fashion. Each piece in our collection is a testament to extraordinary craftsmanship, using only the finest materials sourced from around the world.</p>
+              <p>Founded in 2024, {brandName} represents the pinnacle of luxury fashion. Each piece in our collection is a testament to extraordinary craftsmanship, using only the finest materials sourced from around the world.</p>
               <p>Our ateliers in Italy and France house master artisans who bring decades of experience to every stitch, fold, and finish. We believe in slow fashion — creating pieces that transcend seasons and trends.</p>
-              <p>From our signature handbags to our curated accessories, every Caviar Beauty piece is designed to be cherished for a lifetime.</p>
+              <p>From our signature handbags to our curated accessories, every {brandName} piece is designed to be cherished for a lifetime.</p>
             </div>
             <div className="grid grid-cols-3 gap-8 mt-10">
               {[{ num: '200+', label: 'Artisans' }, { num: '30+', label: 'Countries' }, { num: '50K+', label: 'Happy Clients' }].map((stat) => (

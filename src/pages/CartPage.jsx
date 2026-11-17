@@ -4,8 +4,10 @@ import { FiTrash2, FiPlus, FiMinus, FiArrowLeft } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice, getImageUrl } from '@/utils/helpers';
 import PageTransition from '@/components/layout/PageTransition';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function CartPage() {
+  useSeo('Shopping Cart', 'Review the items in your shopping cart before checkout.');
   const items = useCartStore((s) => s.items);
   const total = useCartStore((s) => s.total);
   const updateQuantity = useCartStore((s) => s.updateQuantity);

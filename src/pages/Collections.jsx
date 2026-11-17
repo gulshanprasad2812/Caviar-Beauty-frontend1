@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import PageTransition from '@/components/layout/PageTransition';
 import { useSeo } from '@/hooks/useSeo';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 import api from '@/utils/api';
 
 export default function Collections() {
-  useSeo('Collections', 'Explore curated luxury collections at Caviar Beauty.');
+  const { brandName } = useSiteSettings();
+  useSeo('Collections', `Explore curated luxury collections at ${brandName}.`);
   const { data, isLoading } = useQuery({
     queryKey: ['collections'],
     queryFn: async () => (await api.get('/catalog/collections')).data,

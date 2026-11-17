@@ -5,8 +5,10 @@ import { FiMail, FiArrowLeft, FiCheck, FiLock } from 'react-icons/fi';
 import api from '@/utils/api';
 import toast from 'react-hot-toast';
 import PageTransition from '@/components/layout/PageTransition';
+import { useSeo } from '@/hooks/useSeo';
 
 export default function ForgotPassword() {
+  useSeo('Forgot Password', 'Reset the password for your account.');
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -19,8 +21,12 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/auth/forgot-password', { email });
-      toast.success('OTP sent to your email');
+      const { data } = await api.post('/auth/forgot-password', { email });
+      if (data?.emailSent === false) {
+        toast.error('Email delivery is not configured, so the reset code could not be sent. Check EMAIL_OTP_SETUP.md.');
+      } else {
+        toast.success('OTP sent to your email');
+      }
       setStep(2);
     } catch (err) {
       toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to send OTP');

@@ -6,13 +6,22 @@ import { FiMail, FiPhone, FiMapPin, FiClock } from 'react-icons/fi';
 import PageTransition from '@/components/layout/PageTransition';
 import api from '@/utils/api';
 import { useSeo } from '@/hooks/useSeo';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 import toast from 'react-hot-toast';
 
 const schema = z.object({ name: z.string().min(1), email: z.string().email(), subject: z.string().min(1), message: z.string().min(10) });
 
 export default function Contact() {
-  useSeo('Contact', 'Get in touch with Caviar Beauty — we reply within 24 hours.');
+  const settings = useSiteSettings();
+  useSeo('Contact', `Get in touch with ${settings.brandName} — we reply within 24 hours.`);
   const { register, handleSubmit, formState: { errors }, reset } = useForm({ resolver: zodResolver(schema) });
+
+  const details = [
+    settings.address && { icon: FiMapPin, title: 'Flagship Store', info: settings.address, sub: settings.hours },
+    settings.supportPhone && { icon: FiPhone, title: 'Phone', info: settings.supportPhone, sub: '24/7 Concierge Service' },
+    settings.supportEmail && { icon: FiMail, title: 'Email', info: settings.supportEmail, sub: 'We reply within 24 hours' },
+    settings.hours && { icon: FiClock, title: 'Business Hours', info: settings.hours, sub: 'Sunday: 12PM - 6PM' },
+  ].filter(Boolean);
 
   const onSubmit = async (data) => {
     try {
@@ -64,12 +73,7 @@ export default function Contact() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="space-y-8">
-              {[
-                { icon: FiMapPin, title: 'Flagship Store', info: '725 Fifth Avenue, New York, NY 10022', sub: 'Open daily 10AM - 8PM' },
-                { icon: FiPhone, title: 'Phone', info: '+1 (555) 123-4567', sub: '24/7 Concierge Service' },
-                { icon: FiMail, title: 'Email', info: 'hello@caviarbeauty.com', sub: 'We reply within 24 hours' },
-                { icon: FiClock, title: 'Business Hours', info: 'Mon - Sat: 10AM - 8PM', sub: 'Sunday: 12PM - 6PM' },
-              ].map((item) => (
+              {details.map((item) => (
                 <div key={item.title} className="flex space-x-4">
                   <div className="w-12 h-12 flex items-center justify-center border border-caviar-300 dark:border-caviar-600 flex-shrink-0">
                     <item.icon className="w-5 h-5 text-gold-500" />

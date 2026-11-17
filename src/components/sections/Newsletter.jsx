@@ -4,8 +4,10 @@ import { FiArrowRight } from 'react-icons/fi';
 import { useInView } from '@/hooks/useInView';
 import api from '@/utils/api';
 import toast from 'react-hot-toast';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function Newsletter() {
+  const { brandName } = useSiteSettings();
   const [email, setEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
   const { ref, isInView } = useInView();
@@ -16,7 +18,7 @@ export default function Newsletter() {
     setSubscribing(true);
     try {
       await api.post('/newsletter', { email });
-      toast.success('Welcome to Caviar Beauty! Check your inbox.');
+      toast.success(`Welcome to ${brandName}! Check your inbox.`);
       setEmail('');
     } catch {
       toast.error('Subscription failed. Please try again.');

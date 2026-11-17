@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { useSeo } from '@/hooks/useSeo';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 import PageTransition from '@/components/layout/PageTransition';
 import Hero from '@/components/sections/Hero';
 import FeaturedCollections from '@/components/sections/FeaturedCollections';
@@ -15,7 +16,8 @@ import Newsletter from '@/components/sections/Newsletter';
 import ContactPreview from '@/components/sections/ContactPreview';
 
 export default function Home() {
-  useSeo('Home', 'Discover luxury fashion at Caviar Beauty — handcrafted bags, eyewear, and more.');
+  const { brandName } = useSiteSettings();
+  useSeo('Home', `Discover luxury fashion at ${brandName} - handcrafted bags, eyewear, and more.`);
   const { data: featured } = useQuery({ queryKey: ['featured-products'], queryFn: () => api.get('/products/featured').then(r => r.data.products) });
   const { data: newArrivals } = useQuery({ queryKey: ['new-arrivals'], queryFn: () => api.get('/products/new-arrivals').then(r => r.data.products) });
   const { data: bestSellers } = useQuery({ queryKey: ['best-sellers'], queryFn: () => api.get('/products/best-sellers').then(r => r.data.products) });

@@ -11,9 +11,11 @@ import ProductInfo from '@/components/product/ProductInfo';
 import ProductReviews from '@/components/product/ProductReviews';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useSiteSettings } from '@/hooks/useSiteContent';
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const { brandName } = useSiteSettings();
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     queryFn: () => api.get(`/products/${slug}`).then(r => r.data),
@@ -36,7 +38,7 @@ export default function ProductDetail() {
     description: product.metaDesc || product.description,
     image: product.images?.[0]?.url ? [product.images[0].url] : ['/favicon.svg'],
     sku: product.slug,
-    brand: { '@type': 'Brand', name: product.brand?.name || 'Caviar Beauty' },
+    brand: { '@type': 'Brand', name: product.brand?.name || brandName },
     offers: {
       '@type': 'Offer',
       priceCurrency: 'INR',

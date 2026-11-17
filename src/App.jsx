@@ -44,6 +44,9 @@ const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const VerifyEmail = lazy(() => import('@/pages/VerifyEmail'));
 const InfoPage = lazy(() => import('@/pages/InfoPage'));
+const AdminContent = lazy(() => import('@/pages/AdminContent'));
+const AdminContentForm = lazy(() => import('@/pages/AdminContentForm'));
+const AdminSettings = lazy(() => import('@/pages/AdminSettings'));
 
 const PageLoader = () => (
   <PageTransition>
@@ -106,6 +109,11 @@ export default function App() {
                 <Route path="/size-guide" element={<InfoPage page="sizeGuide" />} />
                 <Route path="/care-instructions" element={<InfoPage page="careInstructions" />} />
                 <Route path="/track-order" element={<InfoPage page="trackOrder" />} />
+                <Route path="/privacy-policy" element={<InfoPage slug="privacy-policy" />} />
+                <Route path="/terms-of-service" element={<InfoPage slug="terms-of-service" />} />
+                <Route path="/cookie-policy" element={<InfoPage slug="cookie-policy" />} />
+                <Route path="/gdpr-compliance" element={<InfoPage slug="gdpr-compliance" />} />
+                <Route path="/p/:slug" element={<InfoPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/change-password" element={<AdminChangePassword />} />
@@ -127,6 +135,10 @@ export default function App() {
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
                 <Route path="/admin/catalog" element={<AdminCatalog />} />
                 <Route path="/admin/reviews" element={<AdminReviews />} />
+                <Route path="/admin/content" element={<AdminContent />} />
+                <Route path="/admin/content/new" element={<AdminContentForm />} />
+                <Route path="/admin/content/:id/edit" element={<AdminContentForm />} />
+                <Route path="/admin/settings" element={<AdminSettings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

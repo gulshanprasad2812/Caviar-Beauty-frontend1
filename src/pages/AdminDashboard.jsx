@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FiPackage, FiUsers, FiShoppingBag, FiDollarSign, FiTrendingUp, FiBox, FiLogOut, FiStar } from 'react-icons/fi';
+import { FiPackage, FiUsers, FiShoppingBag, FiDollarSign, FiTrendingUp, FiBox, FiLogOut, FiStar, FiFileText, FiSettings } from 'react-icons/fi';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import api from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
@@ -106,6 +106,8 @@ export default function AdminDashboard() {
                   { label: 'Coupons', href: '/admin/coupons', icon: FiTrendingUp },
                   { label: 'Catalog', href: '/admin/catalog', icon: FiBox },
                   { label: 'Reviews', href: '/admin/reviews', icon: FiStar },
+                  { label: 'Pages', href: '/admin/content', icon: FiFileText },
+                  { label: 'Settings', href: '/admin/settings', icon: FiSettings },
                 ].map((action) => (
                   <Link key={action.label} to={action.href} className="p-6 border border-caviar-200 dark:border-caviar-800 hover:border-gold-500 dark:hover:border-gold-500 transition-colors group text-center">
                     <action.icon className="w-6 h-6 mx-auto text-caviar-400 group-hover:text-gold-500 transition-colors mb-3" />
