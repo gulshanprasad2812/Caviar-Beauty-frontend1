@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useCartStore } from '@/store/cartStore';
@@ -59,6 +60,15 @@ const PageLoader = () => (
   </PageTransition>
 );
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+// The Google Identity script is only needed on the two pages that offer
+// "Continue with Google". Mounting its provider app-wide loaded
+// accounts.google.com/gsi/client on every page for no benefit.
+const withGoogle = (node) => (
+  googleClientId ? <GoogleOAuthProvider clientId={googleClientId}>{node}</GoogleOAuthProvider> : node
+);
+
 export default function App() {
   const { pathname } = useLocation();
   const checkAuth = useAuthStore((s) => s.checkAuth);
@@ -71,7 +81,16 @@ export default function App() {
   const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
   const resetWishlist = useWishlistStore((s) => s.reset);
   const previousAuthUserId = useRef(undefined);
-  const [showSplash, setShowSplash] = useState(pathname === '/');
+  // The brand curtain runs once per browser session instead of on every trip
+  // back to the homepage.
+  const [showSplash, setShowSplash] = useState(() => (
+    pathname === '/' && typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('cb-splash-shown')
+  ));
+
+  const finishSplash = useCallback(() => {
+    try { sessionStorage.setItem('cb-splash-shown', '1'); } catch { /* private mode */ }
+    setShowSplash(false);
+  }, []);
 
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => { if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDark]);
@@ -94,7 +113,7 @@ export default function App() {
   // chrome-free: no navigation, footer, cart drawer or cookie banner.
   const isPayPage = pathname.startsWith('/pay/');
 
-  if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  if (showSplash) return <SplashScreen onFinish={finishSplash} />;
 
   return (
     <>
@@ -121,10 +140,10 @@ export default function App() {
                 <Route path="/cookie-policy" element={<InfoPage slug="cookie-policy" />} />
                 <Route path="/gdpr-compliance" element={<InfoPage slug="gdpr-compliance" />} />
                 <Route path="/p/:slug" element={<InfoPage />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={withGoogle(<Login />)} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/change-password" element={<AdminChangePassword />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/register" element={withGoogle(<Register />)} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
