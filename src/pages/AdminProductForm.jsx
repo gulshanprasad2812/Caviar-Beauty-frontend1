@@ -27,6 +27,7 @@ export default function AdminProductForm() {
   const queryClient = useQueryClient();
   const isEdit = Boolean(id);
   const [form, setForm] = useState(defaultProduct);
+  const [slugEdited, setSlugEdited] = useState(false);
 
   const { data: catData, isError: categoriesError, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/categories').then(r => r.data), enabled: user?.role === 'ADMIN' });
   const { data: brandData, isError: brandsError, isLoading: brandsLoading, refetch: refetchBrands } = useQuery({ queryKey: ['brands'], queryFn: () => api.get('/brands').then(r => r.data), enabled: user?.role === 'ADMIN' });
@@ -67,6 +68,7 @@ export default function AdminProductForm() {
         images: existingProduct.images?.length ? existingProduct.images.map(img => ({ url: img.url, alt: img.alt || '' })) : [{ url: '', alt: '' }],
         variants: existingProduct.variants?.length ? existingProduct.variants.map(v => ({ color: v.color || '', size: v.size || '', stock: v.stock || 0, price: v.price?.toString() || '' })) : [{ color: '', size: '', stock: 0, price: '' }],
       });
+      setSlugEdited(false);
     }
   }, [isEdit, existingProduct]);
 
@@ -115,8 +117,15 @@ export default function AdminProductForm() {
 
   const generateSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+  // Follow the product name while the slug has not been customised, in both
+  // create and edit mode. Editing the slug field locks in a manual value.
   const handleNameChange = (value) => {
-    setForm(prev => ({ ...prev, name: value, slug: isEdit ? prev.slug : generateSlug(value) }));
+    setForm(prev => ({ ...prev, name: value, slug: slugEdited ? prev.slug : generateSlug(value) }));
+  };
+
+  const handleSlugChange = (value) => {
+    setSlugEdited(true);
+    setForm(prev => ({ ...prev, slug: generateSlug(value) }));
   };
 
   const handleSubmit = (e) => {
@@ -190,8 +199,8 @@ export default function AdminProductForm() {
                 </div>
                 <div>
                   <label className="block text-xs tracking-widest uppercase font-medium mb-2">Slug <span className="text-red-500">*</span></label>
-                  <input type="text" value={form.slug} onChange={(e) => handleChange('slug', e.target.value)} className="input-field w-full" placeholder="diamond-quilted-shoulder-bag" disabled={isEdit} />
-                  <p className="text-[10px] text-caviar-400 mt-1">Auto-generated from name. Use lowercase with hyphens.</p>
+                  <input type="text" value={form.slug} onChange={(e) => handleSlugChange(e.target.value)} className="input-field w-full" placeholder="diamond-quilted-shoulder-bag" />
+                  <p className="text-[10px] text-caviar-400 mt-1">Follows the product name. Edit this field to lock a custom URL.</p>
                 </div>
                 <div>
                   <label className="block text-xs tracking-widest uppercase font-medium mb-2">SKU</label>
