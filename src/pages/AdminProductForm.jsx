@@ -197,14 +197,10 @@ export default function AdminProductForm() {
                   <label className="block text-xs tracking-widest uppercase font-medium mb-2">Product Name <span className="text-red-500">*</span></label>
                   <input type="text" value={form.name} onChange={(e) => handleNameChange(e.target.value)} className="input-field w-full" placeholder="e.g., Diamond Quilted Shoulder Bag" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-xs tracking-widest uppercase font-medium mb-2">Slug <span className="text-red-500">*</span></label>
                   <input type="text" value={form.slug} onChange={(e) => handleSlugChange(e.target.value)} className="input-field w-full" placeholder="diamond-quilted-shoulder-bag" />
                   <p className="text-[10px] text-caviar-400 mt-1">Follows the product name. Edit this field to lock a custom URL.</p>
-                </div>
-                <div>
-                  <label className="block text-xs tracking-widest uppercase font-medium mb-2">SKU</label>
-                  <input type="text" value={form.sku || ''} disabled className="input-field w-full opacity-50" placeholder="Auto-generated" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs tracking-widest uppercase font-medium mb-2">Description <span className="text-red-500">*</span></label>

@@ -104,7 +104,7 @@ export default function AdminProducts() {
                 <thead>
                   <tr className="border-b border-caviar-200 dark:border-caviar-800 bg-caviar-50 dark:bg-caviar-900/50">
                     <th className="text-left py-4 px-4 text-xs tracking-wider uppercase text-caviar-500 font-medium">Product</th>
-                    <th className="text-left py-4 px-4 text-xs tracking-wider uppercase text-caviar-500 font-medium">SKU</th>
+                    
                     <th className="text-left py-4 px-4 text-xs tracking-wider uppercase text-caviar-500 font-medium">Category</th>
                     <th className="text-left py-4 px-4 text-xs tracking-wider uppercase text-caviar-500 font-medium">Price</th>
                     <th className="text-left py-4 px-4 text-xs tracking-wider uppercase text-caviar-500 font-medium">Stock</th>
@@ -131,7 +131,7 @@ export default function AdminProducts() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-caviar-500 text-xs">{product.sku || '—'}</td>
+                      
                       <td className="py-4 px-4 text-caviar-500">{product.category?.name}</td>
                       <td className="py-4 px-4">
                         <span className="font-medium">{formatPrice(product.basePrice)}</span>
