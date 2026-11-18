@@ -11,10 +11,14 @@ export const useCartStore = create((set, get) => ({
   total: 0,
   isOpen: false,
   isLoading: false,
+  // Distinguishes "the cart is empty" from "the cart has not been fetched
+  // yet", so pages that redirect on an empty cart (checkout) do not bounce
+  // away on a hard refresh before the server replies.
+  isFetched: false,
   reset: () => {
     cartFetchGeneration += 1;
     cartFetchPromise = undefined;
-    set({ items: [], total: 0, isOpen: false, isLoading: false });
+    set({ items: [], total: 0, isOpen: false, isLoading: false, isFetched: false });
   },
   fetchCart: () => {
     if (cartFetchPromise) return cartFetchPromise;
@@ -25,7 +29,10 @@ export const useCartStore = create((set, get) => ({
         if (generation === cartFetchGeneration) set({ items: data.items, total: data.total });
       } catch (err) {
         if (generation === cartFetchGeneration && err.response?.status === 401) set({ items: [], total: 0 });
-      } finally { if (cartFetchPromise === request) cartFetchPromise = undefined; }
+      } finally {
+        if (cartFetchPromise === request) cartFetchPromise = undefined;
+        if (generation === cartFetchGeneration) set({ isFetched: true });
+      }
     })();
     cartFetchPromise = request;
     return request;

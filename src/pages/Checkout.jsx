@@ -87,7 +87,9 @@ export default function Checkout() {
   const [payRetrying, setPayRetrying] = useState(false);
   const items = useCartStore((s) => s.items);
   const total = useCartStore((s) => s.total);
+  const cartFetched = useCartStore((s) => s.isFetched);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authLoading = useAuthStore((s) => s.isLoading);
   const { data: savedAddresses = [] } = useQuery({
     queryKey: ['my-addresses'],
     queryFn: () => api.get('/addresses').then((r) => r.data.addresses || []),
@@ -159,7 +161,27 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paySession, payStage]);
 
+  // Wait for the session and the cart to load before deciding where to go.
+  // Without this a refresh on /checkout lands on /login and then /dashboard.
+  if (authLoading) {
+    return (
+      <PageTransition>
+        <div className="pt-32 pb-20 px-4 min-h-screen flex items-center justify-center">
+          <span className="w-10 h-10 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </PageTransition>
+    );
+  }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!cartFetched && !paymentSettled.current) {
+    return (
+      <PageTransition>
+        <div className="pt-32 pb-20 px-4 min-h-screen flex items-center justify-center">
+          <span className="w-10 h-10 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </PageTransition>
+    );
+  }
   if (items.length === 0 && !paymentSettled.current) return <Navigate to="/cart" replace />;
 
   const applyCoupon = async () => {
