@@ -34,6 +34,7 @@ const AdminUsers = lazy(() => import('@/pages/AdminUsers'));
 const AdminCoupons = lazy(() => import('@/pages/AdminCoupons'));
 const AdminCatalog = lazy(() => import('@/pages/AdminCatalog'));
 const AdminReviews = lazy(() => import('@/pages/AdminReviews'));
+const AdminMessages = lazy(() => import('@/pages/AdminMessages'));
 const OrderDetail = lazy(() => import('@/pages/OrderDetail'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const Checkout = lazy(() => import('@/pages/Checkout'));
@@ -142,6 +143,7 @@ export default function App() {
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
                 <Route path="/admin/catalog" element={<AdminCatalog />} />
                 <Route path="/admin/reviews" element={<AdminReviews />} />
+              <Route path="/admin/messages" element={<AdminMessages />} />
                 <Route path="/admin/content" element={<AdminContent />} />
                 <Route path="/admin/content/new" element={<AdminContentForm />} />
                 <Route path="/admin/content/:id/edit" element={<AdminContentForm />} />

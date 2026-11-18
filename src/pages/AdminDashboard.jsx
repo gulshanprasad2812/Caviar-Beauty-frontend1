@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FiPackage, FiUsers, FiShoppingBag, FiDollarSign, FiTrendingUp, FiBox, FiLogOut, FiStar, FiFileText, FiSettings } from 'react-icons/fi';
+import { FiPackage, FiUsers, FiShoppingBag, FiDollarSign, FiTrendingUp, FiBox, FiLogOut, FiStar, FiFileText, FiSettings, FiMail } from 'react-icons/fi';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import api from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
@@ -106,6 +106,7 @@ export default function AdminDashboard() {
                   { label: 'Coupons', href: '/admin/coupons', icon: FiTrendingUp },
                   { label: 'Catalog', href: '/admin/catalog', icon: FiBox },
                   { label: 'Reviews', href: '/admin/reviews', icon: FiStar },
+                  { label: 'Messages', href: '/admin/messages', icon: FiMail },
                   { label: 'Pages', href: '/admin/content', icon: FiFileText },
                   { label: 'Settings', href: '/admin/settings', icon: FiSettings },
                 ].map((action) => (
