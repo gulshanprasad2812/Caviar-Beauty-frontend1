@@ -28,9 +28,12 @@ export const useAuthStore = create((set, get) => ({
     if (phone) set({ user: { ...get().user, phone } });
     return data;
   },
-  verifyPhoneOtp: async (otp) => {
-    const { data } = await api.post('/auth/phone/verify-otp', { otp });
-    set({ user: { ...get().user, phoneVerified: true } });
+  // Legacy Twilio path sends `{ otp }`; Firebase sends `{ idToken }`. Both land
+  // on the same endpoint, which knows which one it received.
+  verifyPhoneOtp: async (payload) => {
+    const body = typeof payload === 'string' ? { otp: payload } : payload;
+    const { data } = await api.post('/auth/phone/verify-otp', body);
+    set({ user: { ...get().user, phoneVerified: true, ...(data?.phone ? { phone: data.phone } : {}) } });
     return data;
   },
   googleLogin: async (credential) => {
