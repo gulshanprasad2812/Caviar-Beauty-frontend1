@@ -113,10 +113,11 @@ export default function App() {
   // chrome-free: no navigation, footer, cart drawer or cookie banner.
   const isPayPage = pathname.startsWith('/pay/');
 
-  if (showSplash) return <SplashScreen onFinish={finishSplash} />;
-
   return (
     <>
+      {/* Shown over the storefront rather than instead of it, so the route (and
+          its product queries) starts loading while the curtain is visible. */}
+      {showSplash && <SplashScreen onFinish={finishSplash} />}
       {!isPayPage && <CursorEffect />}
       {!isPayPage && <Navbar />}
       <main className="min-h-screen">
