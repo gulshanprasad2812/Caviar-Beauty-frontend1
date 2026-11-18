@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -11,6 +11,7 @@ import { formatPrice } from '@/utils/helpers';
 import { trackEcommerceEvent } from '@/utils/analytics';
 import api from '@/utils/api';
 import PageTransition from '@/components/layout/PageTransition';
+import PaymentQR from '@/components/checkout/PaymentQR';
 import toast from 'react-hot-toast';
 import { useSeo } from '@/hooks/useSeo';
 
@@ -81,6 +82,9 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState('');
   const [coupon, setCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
+  const [paySession, setPaySession] = useState(null);
+  const [payStage, setPayStage] = useState('idle');
+  const [payRetrying, setPayRetrying] = useState(false);
   const items = useCartStore((s) => s.items);
   const total = useCartStore((s) => s.total);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -96,6 +100,7 @@ export default function Checkout() {
     staleTime: 5 * 60 * 1000,
   });
   const paymentReady = paymentConfig?.configured !== false;
+  const dummyMode = paymentConfig?.mode === 'dummy';
   const navigate = useNavigate();
   const idempotencyKey = useRef(crypto.randomUUID());
   const paymentSettled = useRef(false);
@@ -109,8 +114,53 @@ export default function Checkout() {
   const discount = coupon ? Math.min(coupon.discountType === 'percentage' ? total * (coupon.discountValue / 100) : coupon.discountValue, coupon.maxDiscount || Infinity) : 0;
   const grandTotal = total + shippingCost + tax - discount;
 
+  // Shared by the dummy QR flow and the real gateway callback below.
+  const finishPayment = (orderId) => {
+    if (paymentSettled.current) return;
+    paymentSettled.current = true;
+    useCartStore.getState().reset();
+    trackEcommerceEvent('purchase', {
+      items,
+      value: grandTotal,
+      transaction_id: orderId,
+      shipping: shippingCost,
+      tax,
+      ...(coupon?.code ? { coupon: coupon.code } : {}),
+    });
+    toast.success('Payment successful! Order confirmed.');
+    navigate('/orders/' + orderId + '?payment=success');
+  };
+
+  // While the QR is on screen, ask the server whether the phone has paid.
+  // The phone is the only place that confirms; this tab only observes.
+  useEffect(() => {
+    if (!paySession || payStage !== 'waiting') return undefined;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const { data } = await api.get(`/payments/session/${paySession.token}/status`);
+        if (cancelled) return;
+        if (data.status === 'PAID') {
+          setPayStage('paid');
+          finishPayment(paySession.orderId);
+        } else if (['EXPIRED', 'CANCELLED', 'FAILED'].includes(data.status)) {
+          setPayStage(data.status === 'CANCELLED' ? 'cancelled' : 'expired');
+        }
+      } catch (err) {
+        if (!cancelled && err.response?.status === 404) setPayStage('expired');
+      }
+    };
+    const id = setInterval(check, 2000);
+    check();
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paySession, payStage]);
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (items.length === 0) return <Navigate to="/cart" replace />;
+  if (items.length === 0 && !paymentSettled.current) return <Navigate to="/cart" replace />;
 
   const applyCoupon = async () => {
     if (!couponCode) return;
@@ -175,18 +225,7 @@ export default function Checkout() {
       const { data } = await api.post('/payments/verify', { orderId });
       if (data?.pending) return 'pending';
 
-      paymentSettled.current = true;
-      useCartStore.getState().reset();
-      trackEcommerceEvent('purchase', {
-        items,
-        value: grandTotal,
-        transaction_id: orderId,
-        shipping: shippingCost,
-        tax,
-        ...(coupon?.code ? { coupon: coupon.code } : {}),
-      });
-      toast.success('Payment successful! Order confirmed.');
-      navigate('/orders/' + orderId);
+      finishPayment(orderId);
       return 'paid';
     };
 
@@ -252,6 +291,20 @@ export default function Checkout() {
     });
   };
 
+  const retryDummyPayment = async () => {
+    if (!paySession?.orderId) return;
+    setPayRetrying(true);
+    try {
+      const { data } = await api.post('/payments/session', { orderId: paySession.orderId });
+      setPaySession(data);
+      setPayStage('waiting');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not create a new QR code');
+    } finally {
+      setPayRetrying(false);
+    }
+  };
+
   const onSubmit = async (data) => {
     if (step < 2) {
       if (step === 0) {
@@ -279,7 +332,14 @@ export default function Checkout() {
     setPlacing(true);
     try {
       const order = await placeOrder(data);
-      await payWithPaytm(order.id);
+      if (dummyMode) {
+        const { data: session } = await api.post('/payments/session', { orderId: order.id });
+        setPaySession(session);
+        setPayStage('waiting');
+        setPlacing(false);
+      } else {
+        await payWithPaytm(order.id);
+      }
     } catch (err) {
       const message = err.response?.data?.error || err.message || 'Failed to place order. Please try again.';
       toast.error(message);
@@ -311,6 +371,15 @@ export default function Checkout() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <form onSubmit={handleSubmit(onSubmit)} className="lg:col-span-2 space-y-8">
+              {paySession ? (
+                <PaymentQR
+                  session={paySession}
+                  stage={payStage}
+                  onRetry={retryDummyPayment}
+                  retrying={payRetrying}
+                />
+              ) : (
+                <>
               {step === 0 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                   <h3 className="text-sm tracking-widest uppercase font-medium">Shipping Address</h3>
@@ -353,19 +422,26 @@ export default function Checkout() {
                   <div className={`p-6 border ${paymentReady ? 'border-caviar-200 dark:border-caviar-800' : 'border-amber-400'}`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-sm">Paytm Secure Checkout</p>
-                        <p className="text-xs text-caviar-500 mt-1">Pay via UPI, Credit/Debit Card, Net Banking, or Wallets</p>
+                        <p className="font-medium text-sm">{dummyMode ? 'UPI QR — Test Mode' : 'Paytm Secure Checkout'}</p>
+                        <p className="text-xs text-caviar-500 mt-1">
+                          {dummyMode
+                            ? 'Scan a QR code with your phone. No real money is charged.'
+                            : 'Pay via UPI, Credit/Debit Card, Net Banking, or Wallets'}
+                        </p>
                       </div>
                       {paymentReady ? (
-                        <span className="text-xs bg-caviar-100 dark:bg-caviar-800 text-caviar-700 dark:text-caviar-200 px-2 py-1">Secure</span>
+                        <span className={`text-xs px-2 py-1 ${dummyMode ? 'bg-amber-100 text-amber-800' : 'bg-caviar-100 dark:bg-caviar-800 text-caviar-700 dark:text-caviar-200'}`}>
+                          {dummyMode ? 'Demo' : 'Secure'}
+                        </span>
                       ) : (
                         <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1">Not configured</span>
                       )}
                     </div>
                     {paymentReady && paymentConfig?.mode && (
                       <p className="text-[11px] text-caviar-400 mt-3">
-                        Gateway mode: {paymentConfig.mode === 'live' ? 'Live (real money)' : 'Test (sandbox)'} ·{' '}
-                        {paymentConfig.webhookConfigured ? 'Webhooks active' : 'Webhook verification unavailable'}
+                        {dummyMode
+                          ? 'Demo payment gateway — no gateway credentials are used. The order is confirmed when you press Pay on the phone.'
+                          : `Gateway mode: ${paymentConfig.mode === 'live' ? 'Live (real money)' : 'Test (sandbox)'} · ${paymentConfig.webhookConfigured ? 'Webhooks active' : 'Webhook verification unavailable'}`}
                       </p>
                     )}
                   </div>
@@ -402,9 +478,11 @@ export default function Checkout() {
                   <button type="button" onClick={() => setStep(step - 1)} className="text-sm text-caviar-500 hover:text-caviar-950 dark:hover:text-white transition-colors">← Back</button>
                 ) : <div />}
                 <button type="submit" className="btn-primary text-xs" disabled={placing || (step === 2 && !paymentReady)}>
-                  {placing ? 'Processing...' : step === 2 ? (paymentReady ? 'Pay Securely' : 'Payment unavailable') : 'Continue'}
+                  {placing ? 'Processing...' : step === 2 ? (paymentReady ? (dummyMode ? 'Generate QR to Pay' : 'Pay Securely') : 'Payment unavailable') : 'Continue'}
                 </button>
               </div>
+                </>
+              )}
             </form>
 
             <div className="lg:col-span-1">

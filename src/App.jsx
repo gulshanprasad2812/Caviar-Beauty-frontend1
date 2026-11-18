@@ -37,6 +37,7 @@ const AdminReviews = lazy(() => import('@/pages/AdminReviews'));
 const OrderDetail = lazy(() => import('@/pages/OrderDetail'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const Checkout = lazy(() => import('@/pages/Checkout'));
+const DummyPay = lazy(() => import('@/pages/DummyPay'));
 const Wishlist = lazy(() => import('@/pages/Wishlist'));
 const NewArrivals = lazy(() => import('@/pages/NewArrivals'));
 const Collections = lazy(() => import('@/pages/Collections'));
@@ -88,12 +89,16 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   useEffect(() => { trackPageView(pathname); }, [pathname]);
 
+  // The page a phone lands on after scanning the payment QR is deliberately
+  // chrome-free: no navigation, footer, cart drawer or cookie banner.
+  const isPayPage = pathname.startsWith('/pay/');
+
   if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
   return (
     <>
-      <CursorEffect />
-      <Navbar />
+      {!isPayPage && <CursorEffect />}
+      {!isPayPage && <Navbar />}
       <main className="min-h-screen">
         <ErrorBoundary>
           <AnimatePresence mode="wait">
@@ -125,6 +130,7 @@ export default function App() {
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/pay/:token" element={<DummyPay />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/orders/:id" element={<OrderDetail />} />
                 <Route path="/admin" element={<AdminDashboard />} />
@@ -146,10 +152,10 @@ export default function App() {
           </AnimatePresence>
         </ErrorBoundary>
       </main>
-      <Footer />
-      <CartDrawer />
-      <CookieConsent />
-      <BackToTop />
+      {!isPayPage && <Footer />}
+      {!isPayPage && <CartDrawer />}
+      {!isPayPage && <CookieConsent />}
+      {!isPayPage && <BackToTop />}
     </>
   );
 }
