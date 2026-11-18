@@ -13,11 +13,11 @@ import toast from 'react-hot-toast';
  * everything that came through.
  */
 export default function AdminMessages() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isLoading: authLoading } = useAuthStore();
   const queryClient = useQueryClient();
   const [unreadOnly, setUnreadOnly] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: messagesLoading } = useQuery({
     queryKey: ['admin-messages'],
     queryFn: () => api.get('/contact?limit=100').then((r) => r.data),
   });
@@ -35,6 +35,16 @@ export default function AdminMessages() {
     onSuccess: () => { invalidate(); toast.success('Message deleted'); },
     onError: (err) => toast.error(err.response?.data?.error || 'Could not delete the message'),
   });
+
+  // The session is restored asynchronously, so a hard load of this URL would
+  // otherwise redirect before we know whether the visitor is an admin.
+  if (authLoading) {
+    return (
+      <div className="pt-24 md:pt-32 pb-20 px-4 md:px-8 lg:px-12 min-h-screen text-center text-caviar-400">
+        Loading messages...
+      </div>
+    );
+  }
 
   if (user?.role !== 'ADMIN') return <Navigate to={user ? '/dashboard' : '/login'} replace />;
 
@@ -75,7 +85,7 @@ export default function AdminMessages() {
             </button>
           </div>
 
-          {isLoading ? (
+          {messagesLoading ? (
             <div className="text-center py-20 text-caviar-400">Loading messages...</div>
           ) : visible.length === 0 ? (
             <div className="text-center py-20">
