@@ -79,7 +79,7 @@ export default function VerifyEmail() {
     setPhoneLoading(true);
     try {
       if (usingFirebase) {
-        const loaded = await loadFirebaseAuth();
+        const loaded = await loadFirebaseAuth(config?.sms?.firebase);
         if (!loaded) throw new Error('Firebase is not configured on this deployment');
         const { auth, api: authApi } = loaded;
         const e164 = phone.replace(/[^\d+]/g, '');
